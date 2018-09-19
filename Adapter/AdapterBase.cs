@@ -1,5 +1,5 @@
-﻿using Observer;
-using System;
+﻿using System;
+using Observer;
 
 namespace Adapter
 {
