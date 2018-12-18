@@ -2,6 +2,7 @@
 using Observer;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Trnsprt.TCP;
 
@@ -110,6 +111,7 @@ namespace Adapter
             {
                 int num = BitConverter.ToUInt16(receive, 28);
                 int start = 30;
+				lstUpdate.Clear();
                 for (int i = 0; i < num; ++i)
                 {
                     int addr = BitConverter.ToUInt16(receive, start + 8 * i + 1);
@@ -185,13 +187,7 @@ namespace Adapter
 
             Array.ConstrainedCopy(Value, 0, value, 0, value.Length);
             update = lstUpdate.ToArray();
-            lstUpdate.Clear();
             return true;
-        }
-
-        public void InitPt(string[][] para)
-        {
-
         }
 
         public bool IsConnect()

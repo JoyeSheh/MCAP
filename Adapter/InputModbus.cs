@@ -294,6 +294,7 @@ namespace Adapter
             for (currentIdx = 0; currentIdx < frameInfo.Length; ++currentIdx)
             {
                 byte[] request = frameInfo[currentIdx].RequestArray;
+                eventSlim.Reset();
                 try
                 {
                     tcp.Send(request);
@@ -306,7 +307,7 @@ namespace Adapter
                 }
                 ic.Gram(DateTime.Now, "TX", request);
                 int counter = 0;
-                eventSlim.Reset();
+                
                 //eventSlim.Wait();
                 while (!eventSlim.Wait(timeOut) && retry > counter)
                 {
