@@ -1,9 +1,8 @@
-﻿using Asst;
-using Observer;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
+using Asst;
+using Observer;
 using Trnsprt.TCP;
 
 namespace Adapter
@@ -83,68 +82,75 @@ namespace Adapter
 
         private void OnReceiveData(object sender, ReceiveEventArgs e)
         {
-            byte[] receive = e.Receive;
-            ic.Gram(DateTime.Now, "RX", receive);
-
-            if (MinimumLength >= receive.Length) return;
-
-            if (0 == currentLen)
+            try
             {
-                if (0x69 == receive[0] && 0x69 == receive[1])
-                    ResponseGram = new byte[PackHeader.Length + LengthOfPackLength + BitConverter.ToUInt32(receive, 4) + LengthOfCRC16];
+                byte[] receive = e.Receive;
+                ic.Gram(DateTime.Now, "RX", receive);
+
+                if (MinimumLength >= receive.Length) return;
+
+                if (0 == currentLen)
+                {
+                    if (0x69 == receive[0] && 0x69 == receive[1])
+                        ResponseGram = new byte[PackHeader.Length + LengthOfPackLength + BitConverter.ToUInt32(receive, 4) + LengthOfCRC16];
+                    else
+                        return;
+                }
+
+                Array.ConstrainedCopy(receive, 0, ResponseGram, currentLen, receive.Length);
+                currentLen += receive.Length;
+                if (ResponseGram.Length == currentLen)
+                {
+                    currentLen = 0;
+                }
                 else
+                {
                     return;
-            }
+                }
 
-            Array.ConstrainedCopy(receive, 0, ResponseGram, currentLen, receive.Length);
-            currentLen += receive.Length;
-            if (ResponseGram.Length == currentLen)
-            {
-                currentLen = 0;
-            }
-            else
-            {
-                return;
-            }
-
-            if (0x04 == receive[14])
-            {
-                int num = BitConverter.ToUInt16(receive, 28);
-                int start = 30;
-				lstUpdate.Clear();
-                for (int i = 0; i < num; ++i)
+                if (0x04 == receive[14])
                 {
-                    int addr = BitConverter.ToUInt16(receive, start + 8 * i + 1);
-                    if (dicAddr.TryGetValue(addr, out int idx))
+                    int num = BitConverter.ToUInt16(receive, 28);
+                    int start = 30;
+                    lstUpdate.Clear();
+                    for (int i = 0; i < num; ++i)
                     {
-                        Value[idx] = BitConverter.ToInt32(receive, start + 8 * i + 3) * Ratio[idx];
-                        lstUpdate.Add(idx);
+                        int addr = BitConverter.ToUInt16(receive, start + 8 * i + 1);
+                        if (dicAddr.TryGetValue(addr, out int idx))
+                        {
+                            Value[idx] = BitConverter.ToInt32(receive, start + 8 * i + 3) * Ratio[idx];
+                            lstUpdate.Add(idx);
+                        }
+                    }
+                }
+                else if (0x01 == receive[14] || 0x08 == receive[14])
+                {
+                    byte[] response = null;
+                    switch (receive[4])
+                    {
+                        case 0x3A:
+                        {
+                            response = ConstructGram(RandomNumber);
+                            break;
+                        }
+                        case 0x2A:
+                        {
+                            DateTime now = DateTime.Now;
+                            byte[] timing = { 0x04, 0x00, 0x01, 0x00, (byte)now.Second, (byte)now.Minute, (byte)now.Hour, (byte)now.Day, (byte)now.Month, (byte)(now.Year - 2000) };
+                            response = ConstructGram(timing);
+                            break;
+                        }
+                    }
+                    if (null != response)
+                    {
+                        ic.Gram(DateTime.Now, "TX", response);
+                        tcp.Send(response);
                     }
                 }
             }
-            else if (0x01 == receive[14] || 0x08 == receive[14])
+            catch(Exception ex)
             {
-                byte[] response = null;
-                switch (receive[4])
-                {
-                    case 0x3A:
-                    {
-                        response = ConstructGram(RandomNumber);
-                        break;
-                    }
-                    case 0x2A:
-                    {
-                        DateTime now = DateTime.Now;
-                        byte[] timing = { 0x04, 0x00, 0x01, 0x00, (byte)now.Second, (byte)now.Minute, (byte)now.Hour, (byte)now.Day, (byte)now.Month, (byte)(now.Year-2000) };
-                        response = ConstructGram(timing);
-                        break;
-                    }
-                }
-                if (null != response)
-                {
-                    ic.Gram(DateTime.Now, "TX", response);
-                    tcp.Send(response);
-                }
+                ic.Log(DateTime.Now, ex);
             }
         }
 
