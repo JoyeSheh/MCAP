@@ -218,9 +218,6 @@ namespace Adapter
 
         }
 
-        public bool IsConnect()
-        {
-            return isConnect;
-        }
+        public bool IsConnect => isConnect;
     }
 }

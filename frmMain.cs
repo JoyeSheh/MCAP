@@ -124,7 +124,7 @@ namespace MCAP
 
         private void SetOutput(object state)
         {
-            if ((0 == queueData.Count && 0 == queueState.Count) || !outChnl.IsConnect())
+            if ((0 == queueData.Count && 0 == queueState.Count) || !outChnl.IsConnect)
             {
                 return;
             }
@@ -208,7 +208,7 @@ namespace MCAP
 
                 //刷新状态栏
                 Color color;
-                if (outChnl.IsConnect())
+                if (outChnl.IsConnect)
                 {
                     color = Color.Green;
                 }

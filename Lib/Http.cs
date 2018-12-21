@@ -11,11 +11,11 @@ namespace Applctn.Http
         public int Index { get; }
         public int JIndex { get; }
         public float Ratio { get; }
-        public ParaIndex(int index, int jindex, float ratio)
+        public ParaIndex(int index,int jindex,float ratio)
         {
-            Index = index;
-            JIndex = jindex;
-            Ratio = ratio;
+            Index=index;
+            JIndex=jindex;
+            Ratio=ratio;
         }
     }
 
@@ -24,28 +24,41 @@ namespace Applctn.Http
         public static string HttpGet(string url)
         {
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
-            request.Method = "GET";
-            request.ContentType = "text/html;charset=UTF-8";
-            request.KeepAlive = false;
+            request.Method="GET";
+            request.ContentType="text/html;charset=UTF-8";
+            request.KeepAlive=false;
 
-            try {
-                using (HttpWebResponse response = request.GetResponse() as HttpWebResponse)
-                using (StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8)) {
+            try
+            {
+                using(HttpWebResponse response = request.GetResponse() as HttpWebResponse)
+                using(StreamReader reader = new StreamReader(response.GetResponseStream(),Encoding.UTF8))
+                {
                     return reader.ReadToEnd().Trim();
                 }
-            } catch (Exception) {
+            }
+            catch(Exception)
+            {
                 return string.Empty;
-            } finally {
+            }
+            finally
+            {
                 request.Abort();
             }
         }
 
         public static bool IsValid(string result,string key,int value)
         {
-            if (string.Empty.Equals(result)) return false;
-            try {
-                return (value == Convert.ToInt32(JToken.Parse(result)[key]));
-            } catch {
+            if(string.Empty.Equals(result))
+            {
+                return false;
+            }
+
+            try
+            {
+                return (value==Convert.ToInt32(JToken.Parse(result)[key]));
+            }
+            catch
+            {
                 return false;
             }
         }

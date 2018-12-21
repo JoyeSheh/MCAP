@@ -27,10 +27,7 @@ namespace Adapter
         {
         }
 
-        public bool IsConnect()
-        {
-            return true;
-        }
+        public bool IsConnect => true;
 
         public void SetState(string tag, DateTime time, int value)
         {

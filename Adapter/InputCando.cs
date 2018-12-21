@@ -7,7 +7,7 @@ using Trnsprt.TCP;
 
 namespace Adapter
 {
-    internal class InputCando : IInputAdapter
+    internal class InputCando:IInputAdapter
     {
         private static readonly ushort[] CRC16Table =
         {
@@ -32,9 +32,9 @@ namespace Adapter
         private const int MinimumLength = 18;
         private const int LengthOfPackLength = 4;
         private const int LengthOfCRC16 = 2;
-        private static readonly byte[] PackHeader = { 0x69, 0x69, 0x01, 0x00 };
-        private static readonly byte[] ProtocolNumber = { 0x01, 0x00, 0x01, 0x00, 0x00, 0x00 };
-        private static readonly byte[] TypeCode = { 0x01, 0x00 };
+        private static readonly byte[] PackHeader = { 0x69,0x69,0x01,0x00 };
+        private static readonly byte[] ProtocolNumber = { 0x01,0x00,0x01,0x00,0x00,0x00 };
+        private static readonly byte[] TypeCode = { 0x01,0x00 };
         private const byte LenthOfLogin = 0x3A;
         private static readonly byte[] RandomNumber =
         {
@@ -44,8 +44,7 @@ namespace Adapter
         };
 
         private readonly TCPBase tcp;
-
-        private readonly Dictionary<int, int> dicAddr;
+        private readonly Dictionary<int,int> dicAddr;
         private readonly float[] Ratio;
         private readonly List<int> lstUpdate;
         private readonly float[] Value;
@@ -53,152 +52,151 @@ namespace Adapter
         private int currentLen;
         private byte[] ResponseGram;
 
-
-
         private InfoCenter ic;
-
-        public InputCando(string path, string[][] para)
-        {
-            IniFile ini = new IniFile(path + "\\Cando.ini");
-
-            IPAddress ip = IPAddress.Parse(ini.GetStr("TCP", "IP"));
-            int port = ini.GetInt("TCP", "Port", 9000);
-            tcp = TCPFactory.Instance.CreateTCP("Server", ip, port, OnReceiveData);
-
-            dicAddr = new Dictionary<int, int>();
-            Ratio = new float[para.Length];
-            for (int i = 0; i < para.Length; ++i)
-            {
-                dicAddr.Add(int.Parse(para[i][0]), i);
-                Ratio[i] = float.Parse(para[i][1]);
-            }
-            lstUpdate = new List<int>();
-            Value = new float[para.Length];
-
-            ic = new InfoCenter(path);
-        }
 
         public event EventHandler<LogEventArgs> Log;
 
-        private void OnReceiveData(object sender, ReceiveEventArgs e)
+        public InputCando(string path,string[][] para)
+        {
+            IniFile ini = new IniFile(path+"\\Cando.ini");
+
+            IPAddress ip = IPAddress.Parse(ini.GetStr("TCP","IP"));
+            int port = ini.GetInt("TCP","Port",9000);
+            tcp=TCPFactory.Instance.CreateTCP("Server",ip,port,OnReceiveData);
+
+            dicAddr=new Dictionary<int,int>();
+            Ratio=new float[para.Length];
+            for(int i = 0;i<para.Length;++i)
+            {
+                dicAddr.Add(int.Parse(para[i][0]),i);
+                Ratio[i]=float.Parse(para[i][1]);
+            }
+            lstUpdate=new List<int>();
+            Value=new float[para.Length];
+
+            ic=new InfoCenter(path);
+        }
+
+        private void OnReceiveData(object sender,ReceiveEventArgs e)
         {
             try
             {
                 byte[] receive = e.Receive;
-                ic.Gram(DateTime.Now, "RX", receive);
+                ic.Gram(DateTime.Now,"RX",receive);
 
-                if (MinimumLength >= receive.Length) return;
-
-                if (0 == currentLen)
+                if(MinimumLength>=receive.Length)
                 {
-                    if (0x69 == receive[0] && 0x69 == receive[1])
-                        ResponseGram = new byte[PackHeader.Length + LengthOfPackLength + BitConverter.ToUInt32(receive, 4) + LengthOfCRC16];
-                    else
-                        return;
+                    return;
                 }
 
-                Array.ConstrainedCopy(receive, 0, ResponseGram, currentLen, receive.Length);
-                currentLen += receive.Length;
-                if (ResponseGram.Length == currentLen)
+                if(0==currentLen)
                 {
-                    currentLen = 0;
+                    if(0x69==receive[0]&&0x69==receive[1])
+                    {
+                        ResponseGram=new byte[PackHeader.Length+LengthOfPackLength+BitConverter.ToUInt32(receive,4)+LengthOfCRC16];
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                Array.ConstrainedCopy(receive,0,ResponseGram,currentLen,receive.Length);
+                currentLen+=receive.Length;
+                if(ResponseGram.Length==currentLen)
+                {
+                    currentLen=0;
                 }
                 else
                 {
                     return;
                 }
 
-                if (0x04 == receive[14])
+                if(0x04==receive[14])
                 {
-                    int num = BitConverter.ToUInt16(receive, 28);
+                    int num = BitConverter.ToUInt16(receive,28);
                     int start = 30;
                     lstUpdate.Clear();
-                    for (int i = 0; i < num; ++i)
+                    for(int i = 0;i<num;++i)
                     {
-                        int addr = BitConverter.ToUInt16(receive, start + 8 * i + 1);
-                        if (dicAddr.TryGetValue(addr, out int idx))
+                        int addr = BitConverter.ToUInt16(receive,start+8*i+1);
+                        if(dicAddr.TryGetValue(addr,out int idx))
                         {
-                            Value[idx] = BitConverter.ToInt32(receive, start + 8 * i + 3) * Ratio[idx];
+                            Value[idx]=BitConverter.ToInt32(receive,start+8*i+3)*Ratio[idx];
                             lstUpdate.Add(idx);
                         }
                     }
                 }
-                else if (0x01 == receive[14] || 0x08 == receive[14])
+                else if(0x01==receive[14]||0x08==receive[14])
                 {
                     byte[] response = null;
-                    switch (receive[4])
+                    switch(receive[4])
                     {
                         case 0x3A:
                         {
-                            response = ConstructGram(RandomNumber);
+                            response=ConstructGram(RandomNumber);
                             break;
                         }
                         case 0x2A:
                         {
                             DateTime now = DateTime.Now;
-                            byte[] timing = { 0x04, 0x00, 0x01, 0x00, (byte)now.Second, (byte)now.Minute, (byte)now.Hour, (byte)now.Day, (byte)now.Month, (byte)(now.Year - 2000) };
-                            response = ConstructGram(timing);
+                            byte[] timing = { 0x04,0x00,0x01,0x00,(byte)now.Second,(byte)now.Minute,(byte)now.Hour,(byte)now.Day,(byte)now.Month,(byte)(now.Year-2000) };
+                            response=ConstructGram(timing);
                             break;
                         }
                     }
-                    if (null != response)
+                    if(null!=response)
                     {
-                        ic.Gram(DateTime.Now, "TX", response);
+                        ic.Gram(DateTime.Now,"TX",response);
                         tcp.Send(response);
                     }
                 }
             }
             catch(Exception ex)
             {
-                ic.Log(DateTime.Now, ex);
+                ic.Log(DateTime.Now,ex);
             }
         }
 
         private byte[] ConstructGram(byte[] data)
         {
-            int totalLength = MinimumLength + data.Length;
+            int totalLength = MinimumLength+data.Length;
             byte[] gram = new byte[totalLength];
-            Buffer.BlockCopy(PackHeader, 0, gram, 0, PackHeader.Length);
-            Buffer.BlockCopy(BitConverter.GetBytes(ProtocolNumber.Length + TypeCode.Length + data.Length), 0, gram, PackHeader.Length, LengthOfPackLength);
-            Buffer.BlockCopy(ProtocolNumber, 0, gram, PackHeader.Length + LengthOfPackLength, ProtocolNumber.Length);
-            Buffer.BlockCopy(TypeCode, 0, gram, totalLength - LengthOfCRC16 - data.Length - TypeCode.Length, TypeCode.Length);
-            Buffer.BlockCopy(data, 0, gram, totalLength - LengthOfCRC16 - data.Length, data.Length);
-            Buffer.BlockCopy(BitConverter.GetBytes(CRC16H(gram, 0, totalLength - LengthOfCRC16)), 0, gram, totalLength - LengthOfCRC16, LengthOfCRC16);
+            Buffer.BlockCopy(PackHeader,0,gram,0,PackHeader.Length);
+            Buffer.BlockCopy(BitConverter.GetBytes(ProtocolNumber.Length+TypeCode.Length+data.Length),0,gram,PackHeader.Length,LengthOfPackLength);
+            Buffer.BlockCopy(ProtocolNumber,0,gram,PackHeader.Length+LengthOfPackLength,ProtocolNumber.Length);
+            Buffer.BlockCopy(TypeCode,0,gram,totalLength-LengthOfCRC16-data.Length-TypeCode.Length,TypeCode.Length);
+            Buffer.BlockCopy(data,0,gram,totalLength-LengthOfCRC16-data.Length,data.Length);
+            Buffer.BlockCopy(BitConverter.GetBytes(CRC16H(gram,0,totalLength-LengthOfCRC16)),0,gram,totalLength-LengthOfCRC16,LengthOfCRC16);
             return gram;
         }
 
-        private ushort CRC16H(byte[] data, int start, int Len)
+        private ushort CRC16H(byte[] data,int start,int Len)
         {
             ushort crc = 0xffff;
-            for (int i = start; i < start + Len; ++i)
+            for(int i = start;i<start+Len;++i)
             {
-                crc = (ushort)(crc >> 8 ^ CRC16Table[(crc & 0xff ^ data[i])]);
+                crc=(ushort)(crc>>8^CRC16Table[(crc&0xff^data[i])]);
             }
             return crc;
         }
 
-        public bool Connect()
-        {
-            return tcp.Connect();
-        }
+        public bool Connect() => tcp.Connect();
 
-        public void DisConnect()
-        {
-            tcp.DisConnect();
-        }
+        public void DisConnect() => tcp.DisConnect();
 
-        public bool GetData(ref int[] update, float[] value)
+        public bool GetData(ref int[] update,float[] value)
         {
-            if (0 == lstUpdate.Count) return false;
+            if(0==lstUpdate.Count)
+            {
+                return false;
+            }
 
-            Array.ConstrainedCopy(Value, 0, value, 0, value.Length);
-            update = lstUpdate.ToArray();
+            Array.ConstrainedCopy(Value,0,value,0,value.Length);
+            update=lstUpdate.ToArray();
             return true;
         }
 
-        public bool IsConnect()
-        {
-            return tcp.Connected();
-        }
+        public bool IsConnect => tcp.Connected;
     }
 }

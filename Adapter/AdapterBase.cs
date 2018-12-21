@@ -7,7 +7,8 @@ namespace Adapter
     {
         event EventHandler<LogEventArgs> Log;
         bool Connect();
-        bool IsConnect();
+        bool IsConnect { get; }
+
         void DisConnect();
     }
 

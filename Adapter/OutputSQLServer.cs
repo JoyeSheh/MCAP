@@ -70,10 +70,7 @@ namespace Adapter
             }
         }
 
-        public bool IsConnect()
-        {
-            return ConnectionState.Open == conn.State;
-        }
+        public bool IsConnect => ConnectionState.Open==conn.State;
 
 
 
