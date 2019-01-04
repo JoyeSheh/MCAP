@@ -5,10 +5,11 @@ namespace Adapter
 {
     internal interface IAdapter
     {
-        event EventHandler<LogEventArgs> Log;
-        bool Connect();
         bool IsConnect { get; }
 
+        event EventHandler<LogEventArgs> Log;
+
+        bool Connect();
         void DisConnect();
     }
 

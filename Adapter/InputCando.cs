@@ -54,6 +54,8 @@ namespace Adapter
 
         private InfoCenter ic;
 
+        public bool IsConnect => tcp.Connected;
+
         public event EventHandler<LogEventArgs> Log;
 
         public InputCando(string path,string[][] para)
@@ -196,7 +198,5 @@ namespace Adapter
             update=lstUpdate.ToArray();
             return true;
         }
-
-        public bool IsConnect => tcp.Connected;
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Applctn.Modbus
 {
-    internal class RequestRTU : RequestBase
+    internal class RequestRTU:RequestBase
     {
         private static readonly ushort[] CRC16Table =
         {
@@ -27,36 +27,39 @@ namespace Applctn.Modbus
 
         public RequestRTU()
         {
-            LenOfHead = 3;
-            LenOfRear = 2;
+            LenOfHead=3;
+            LenOfRear=2;
         }
 
         private static ushort CRC16(byte[] datas)
         {
             ushort crc = 0xffff;
-            foreach (byte data in datas)
-                crc = (ushort)(crc >> 8 ^ CRC16Table[(crc & 0xff ^ data)]);
+            foreach(byte data in datas)
+            {
+                crc=(ushort)(crc>>8^CRC16Table[(crc&0xff^data)]);
+            }
+
             return crc;
         }
 
-        public override byte[] CreateRequestArray(byte device, MiniFrame miniFrame)
+        public override byte[] CreateRequestArray(byte device,MiniFrame miniFrame)
         {
-            byte[] result = new byte[LenOfRequest + LenOfRear];
-            byte[] request = base.CreateRequestArray(device, miniFrame);
-            Buffer.BlockCopy(request, 0, result, 0, 6);
-            Buffer.BlockCopy(BitConverter.GetBytes(CRC16(request)), 0, result, 6, 2);
+            byte[] result = new byte[LenOfRequest+LenOfRear];
+            byte[] request = base.CreateRequestArray(device,miniFrame);
+            Buffer.BlockCopy(request,0,result,0,6);
+            Buffer.BlockCopy(BitConverter.GetBytes(CRC16(request)),0,result,6,2);
             return result;
         }
     }
 
-    internal class ResponseRTU : ResponseBase
+    internal class ResponseRTU:ResponseBase
     {
-        public ResponseRTU(Dictionary<int, RegisterType> dictype) : base(dictype)
+        public ResponseRTU(Dictionary<int,RegisterType> dictype) : base(dictype)
         {
-            IndexOfFunCode = 1;
-            IndexOfLength = 2;
-            LenOfHead = 3;
-            LenOfRear = 2;
+            IndexOfFunCode=1;
+            IndexOfLength=2;
+            LenOfHead=3;
+            LenOfRear=2;
         }
     }
 }

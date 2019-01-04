@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace Applctn.Modbus
 {
-    public enum FunCode : byte
+    public enum FunCode:byte
     {
         CoilStatus = 1,
         InputStatus,
@@ -14,7 +14,7 @@ namespace Applctn.Modbus
         InputRegister
     }
 
-    public enum RegisterType : byte
+    public enum RegisterType:byte
     {
         [Description("ToUInt16")]
         Bit = 0x1f,
@@ -53,11 +53,11 @@ namespace Applctn.Modbus
         public FunCode Funcode { get; }
         public ushort Start { get; }
         public ushort Count { get; }
-        public MiniFrame(FunCode funcode, ushort start, ushort count)
+        public MiniFrame(FunCode funcode,ushort start,ushort count)
         {
-            Funcode = funcode;
-            Start = start;
-            Count = count;
+            Funcode=funcode;
+            Start=start;
+            Count=count;
         }
     }
 
@@ -71,23 +71,23 @@ namespace Applctn.Modbus
         public int FullStart { get; }
         public int RspnsLen { get; }
 
-        public FrameInfo(RequestBase request, byte device, MiniFrame miniFrame)
+        public FrameInfo(RequestBase request,byte device,MiniFrame miniFrame)
         {
-            Device = device;
-            Funcode = miniFrame.Funcode;
-            Start = miniFrame.Start;
-            Count = miniFrame.Count;
-            RequestArray = request.CreateRequestArray(device, miniFrame);
-            FullStart = ModbusPub.CalcFullAddr(device, miniFrame.Funcode, miniFrame.Start);
-            RspnsLen = request.CalcResponseLen(miniFrame);
+            Device=device;
+            Funcode=miniFrame.Funcode;
+            Start=miniFrame.Start;
+            Count=miniFrame.Count;
+            RequestArray=request.CreateRequestArray(device,miniFrame);
+            FullStart=ModbusPub.CalcFullAddr(device,miniFrame.Funcode,miniFrame.Start);
+            RspnsLen=request.CalcResponseLen(miniFrame);
         }
     }
 
     internal static class ModbusPub
     {
-        public static int CalcFullAddr(byte device, FunCode funcode, ushort addr)
+        public static int CalcFullAddr(byte device,FunCode funcode,ushort addr)
         {
-            return (device << 24) | ((byte)funcode << 16) | addr;
+            return (device<<24)|((byte)funcode<<16)|addr;
         }
     }
 
@@ -101,14 +101,14 @@ namespace Applctn.Modbus
 
         public RequestBase CreateRequest(string mode)
         {
-            Type type = Type.GetType(typeof(RequestBase).FullName.Replace("Base", mode), true);
+            Type type = Type.GetType(typeof(RequestBase).FullName.Replace("Base",mode),true);
             return Activator.CreateInstance(type) as RequestBase;
         }
 
-        public ResponseBase CreateResponse(string mode, Dictionary<int, RegisterType> dictype)
+        public ResponseBase CreateResponse(string mode,Dictionary<int,RegisterType> dictype)
         {
-            Type type = Type.GetType(typeof(ResponseBase).FullName.Replace("Base", mode), true);
-            return Activator.CreateInstance(type, new object[] { dictype }) as ResponseBase;
+            Type type = Type.GetType(typeof(ResponseBase).FullName.Replace("Base",mode),true);
+            return Activator.CreateInstance(type,new object[] { dictype }) as ResponseBase;
         }
     }
 
@@ -119,7 +119,7 @@ namespace Applctn.Modbus
         protected int LenOfHead;
         protected int LenOfRear;
 
-        public virtual byte[] CreateRequestArray(byte device, MiniFrame miniFrame)
+        public virtual byte[] CreateRequestArray(byte device,MiniFrame miniFrame)
         {
             byte[] result = new byte[LenOfRequest]
             {
@@ -136,19 +136,22 @@ namespace Applctn.Modbus
         public int CalcResponseLen(MiniFrame miniFrame)
         {
             int dataLen = 0;
-            switch (miniFrame.Funcode) {
+            switch(miniFrame.Funcode)
+            {
                 case FunCode.CoilStatus:
-                case FunCode.InputStatus: {
-                    dataLen = (miniFrame.Count / BitInByte + (0 == miniFrame.Count % BitInByte ? 0 : 1));
+                case FunCode.InputStatus:
+                {
+                    dataLen=(miniFrame.Count/BitInByte+(0==miniFrame.Count%BitInByte ? 0 : 1));
                     break;
                 }
                 case FunCode.HoldingRegister:
-                case FunCode.InputRegister: {
-                    dataLen = (miniFrame.Count * 2);
+                case FunCode.InputRegister:
+                {
+                    dataLen=(miniFrame.Count*2);
                     break;
                 }
             }
-            return LenOfHead + dataLen + LenOfRear;
+            return LenOfHead+dataLen+LenOfRear;
         }
     }
 
@@ -157,10 +160,10 @@ namespace Applctn.Modbus
         public int FullAddr { get; }
         public float Value { get; }
 
-        public AddrVal(int fulladdr, float value)
+        public AddrVal(int fulladdr,float value)
         {
-            FullAddr = fulladdr;
-            Value = value;
+            FullAddr=fulladdr;
+            Value=value;
         }
     }
 
@@ -171,78 +174,84 @@ namespace Applctn.Modbus
         protected int IndexOfLength;
         protected int LenOfHead;
         protected int LenOfRear;
-        protected Dictionary<int, RegisterType> dicType;
+        protected Dictionary<int,RegisterType> dicType;
 
-        public ResponseBase(Dictionary<int, RegisterType> dictype)
-        {
-            dicType = new Dictionary<int, RegisterType>(dictype);
-        }
+        public ResponseBase(Dictionary<int,RegisterType> dictype) => dicType=new Dictionary<int,RegisterType>(dictype);
 
-        private float ParseByReflection(RegisterType registertype, byte[] data)
+        private float ParseByReflection(RegisterType registertype,byte[] data)
         {
             Type type = typeof(RegisterType);
-            MethodInfo methodInfo = typeof(BitConverter).GetMethod(type.GetField(Enum.GetName(type, registertype)).GetCustomAttribute<DescriptionAttribute>(false).Description);
-            return Convert.ToSingle(methodInfo.Invoke(null, new object[] { data, 0 }));
+            MethodInfo methodInfo = typeof(BitConverter).GetMethod(type.GetField(Enum.GetName(type,registertype)).GetCustomAttribute<DescriptionAttribute>(false).Description);
+            return Convert.ToSingle(methodInfo.Invoke(null,new object[] { data,0 }));
         }
 
-        private List<AddrVal> GetRegisterValue(byte[] data, FrameInfo fram)
+        private List<AddrVal> GetRegisterValue(byte[] data,FrameInfo fram)
         {
             List<AddrVal> rslt = new List<AddrVal>();
             int regPosition = 0;
-            while (regPosition < fram.Count) {
-                if (dicType.TryGetValue(fram.FullStart + regPosition, out RegisterType registerType)) {
+            while(regPosition<fram.Count)
+            {
+                if(dicType.TryGetValue(fram.FullStart+regPosition,out RegisterType registerType))
+                {
                     int regType = (int)registerType;
-                    int regCount = regType >> 4 & 0x07;
-                    byte[] unit = new byte[ByteInRegister * regCount];
-                    int bytePosition = ByteInRegister * regPosition;
-                    if (0 == regType >> 7) {
-                        Buffer.BlockCopy(data, bytePosition, unit, 0, unit.Length);
+                    int regCount = regType>>4&0x07;
+                    byte[] unit = new byte[ByteInRegister*regCount];
+                    int bytePosition = ByteInRegister*regPosition;
+                    if(0==regType>>7)
+                    {
+                        Buffer.BlockCopy(data,bytePosition,unit,0,unit.Length);
                         Array.Reverse(unit);
-                    } else {
-                        for (int i = 0; i < unit.Length; i += ByteInRegister) {
-                            unit[i] = data[bytePosition + i + 1];
-                            unit[i + 1] = data[bytePosition + i];
+                    }
+                    else
+                    {
+                        for(int i = 0;i<unit.Length;i+=ByteInRegister)
+                        {
+                            unit[i]=data[bytePosition+i+1];
+                            unit[i+1]=data[bytePosition+i];
                         }
                     }
-                    rslt.Add(new AddrVal(fram.FullStart + regPosition, ParseByReflection(registerType, unit)));
-                    regPosition += regCount;
-                } else {
+                    rslt.Add(new AddrVal(fram.FullStart+regPosition,ParseByReflection(registerType,unit)));
+                    regPosition+=regCount;
+                }
+                else
+                {
                     ++regPosition;
                 }
             }
             return rslt;
         }
 
-        private List<AddrVal> GetStatusValue(byte[] data, FrameInfo fram)
+        private List<AddrVal> GetStatusValue(byte[] data,FrameInfo fram)
         {
             List<AddrVal> rslt = new List<AddrVal>();
             BitArray bitArray = new BitArray(data);
-            for (int i = 0; i < fram.Count; ++i) {
-                rslt.Add(new AddrVal(fram.FullStart + i, bitArray[i] ? 1 : 0));
+            for(int i = 0;i<fram.Count;++i)
+            {
+                rslt.Add(new AddrVal(fram.FullStart+i,bitArray[i] ? 1 : 0));
             }
             return rslt;
         }
 
-        public bool IsValid(byte[] gram, FrameInfo frame)
-        {
-            return (frame.Funcode == (FunCode)gram[IndexOfFunCode] && frame.RspnsLen == LenOfHead + gram[IndexOfLength] + LenOfRear);
-        }
+        public bool IsValid(byte[] gram,FrameInfo frame) => (frame.Funcode==(FunCode)gram[IndexOfFunCode]&&frame.RspnsLen==LenOfHead+gram[IndexOfLength]+LenOfRear);
 
-        public List<AddrVal> ParseGram(byte[] gram, FrameInfo fram)
+        public List<AddrVal> ParseGram(byte[] gram,FrameInfo fram)
         {
             FunCode funcode = (FunCode)gram[IndexOfFunCode];
-            byte[] data = new byte[fram.RspnsLen - LenOfHead - LenOfRear];
-            Buffer.BlockCopy(gram, LenOfHead, data, 0, data.Length);
+            byte[] data = new byte[fram.RspnsLen-LenOfHead-LenOfRear];
+            Buffer.BlockCopy(gram,LenOfHead,data,0,data.Length);
             List<AddrVal> rslt = new List<AddrVal>();
-            switch (funcode) {
+            switch(funcode)
+            {
                 case FunCode.CoilStatus:
-                case FunCode.InputStatus: {
-                    rslt = GetStatusValue(data, fram);
+                case FunCode.InputStatus:
+                {
+                    rslt=GetStatusValue(data,fram);
                     break;
                 }
                 case FunCode.HoldingRegister:
-                case FunCode.InputRegister: {
-                    rslt = GetRegisterValue(data, fram);
+                case FunCode.InputRegister:
+                {
+                    rslt=GetRegisterValue(data,fram);
                     break;
                 }
             }
